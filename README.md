@@ -98,22 +98,85 @@ Then run the build and search phases:
 
 Recommended parameters for the **SIFT1B**, **DEEP1B**, and **Text2Image1B** datasets are listed below:
 
-| Parameter   | Meaning and Default Value                                    |
-| ----------- | ------------------------------------------------------------ |
-| *partition* | Number of segments **Default:** 10                           |
-| *nlist*     | Number of buckets in each segment **Default:** 200,000 (for all datasets) |
-| *ratio*     | Sampling ratio used during IVF_PQ clustering **Default:** 4 (i.e., sample 25%) |
-| $m$         | Number of sub-vectors in IVF_PQ **Default:** 16 (SIFT1B); 24 (DEEP1B); 100 (Text2Image1B) |
-| $c_{pq}$    | Number of clusters per sub-vector space **Default:** 256     |
-| $M$         | Maximum neighbor count for the centroid graph **Default:** 16 |
-| *efb*       | Priority queue length during centroid-graph construction **Default:** 75 |
-| *efs*       | Priority queue length during centroid-graph search **Default:** 150 |
-| $N$         | Number of lists to probe during search **Default:** 200      |
-| $f$         | Number of lists for full posting-list search **Default:** Automatically adjusted based on disk performance (typically 3 for SSD/GP3, 30 for HDD) |
-| $\epsilon$  | Estimated filtering factor during full posting-list search **Default:** 0.03 |
+| Parameter | Description | Default Value |
+|-----------|-------------|---------------|
+| `partition` | Number of segments | `10` |
+| `nlist` | Number of buckets in each segment | `200,000` (for all datasets) |
+| `ratio` | Sampling ratio used during IVF_PQ clustering | `10` (i.e., sample 10%) |
+| `m` | Number of sub-vectors in IVF_PQ | `16` (SIFT1B); `24` (DEEP1B); `100` (Text2Image1B) |
+| `c_pq` | Number of clusters per sub-vector space | `256` |
+| `M` | Maximum neighbor count for the centroid graph | `16` |
+| `efb` | Priority queue length during centroid-graph construction | `75` |
+| `efs` | Priority queue length during centroid-graph search | `150` |
+| `N` | Number of lists to probe during search | `200` |
+| `f` | Number of lists to search with sequential I/O | Auto-adjusted (typically `3` for SSD/GP3, `30` for HDD) |
+| `ε` (epsilon) | Estimated filtering factor | `0.03` |
+
 
 ------
 
-### Experimental Results
+### Experiments
 
-(Refer to the paper or `docs/` directory for detailed experimental results.)
+#### Datasets
+
+We evaluate DiskV on three billion-scale datasets:
+
+| Dataset | Type | Distance | #Dim. | #Vectors | #Queries |
+|---------|------|----------|-------|----------|----------|
+| SIFT1B | uint8 | L2 | 128 | 1,000,000,000 | 10,000 |
+| DEEP1B | float | L2 | 96 | 1,000,000,000 | 10,000 |
+| Text2Image1B  | float | IP | 200 | 1,000,000,000 | 100,000 |
+
+#### Storage Performance Statistics
+
+We evaluate DiskV on various storage devices.
+`Fio` is used to test the actual IOPS and throughput for both the local disk storage and cloud disk volumes. 
+We set the test in a vector search scenario by employing an iodepth of 64 with 16 concurrent jobs. The program runs with 4KB and 128KB block-size respectively to measure the random and sequential I/O performance during a realistic 60-second workload on a 1GB data file. 
+Below are the details:
+| Disk Storage | Preset IOPS | Tested IOPS | Preset Bandwidth (MB/s) | Tested Bandwidth (MB/s) |
+|--------------|-------------|-------------|-------------------------|-------------------------|
+| GP3_1 (Cloud SSD) | 3,000 | 3,121 | 125 | 125 |
+| GP3_2 (Cloud SSD) | 7,000 | 7,089 | 125 | 125 |
+| GP3_3 (Cloud SSD) | 11,000 | 11,173 | 125 | 125 |
+| GP3_4 (Cloud SSD) | 16,000 | 16,261 | 125 | 125 |
+| IO2 (Cloud SSD) | 18,750 | 18,912 | N/A | 576 |
+| Cloud HDD | N/A | 203 | N/A | 27 |
+| Local SSD | N/A | 76,352 | N/A | 548 |
+| Local HDD | N/A | 339 | N/A | 68 |
+
+#### Results
+
+Each dataset has been divided into 10 segments. The build time is defined as the end-to-end duration from the start of the raw dataset to the completion of building all indexes required for searching. We record the on-disk footprint of each resulting index as index size. 
+
+The query sets for each segment are the same as the query sets from the whole dataset. Query is executed against all segments, and throughput is reported as end-to-end QPS (queries per second).
+
+##### Build time and index size :
+<img src="figures/combined_graph.png" alt="buildtime_indexsize" width="300">
+
+##### AWS GP3 Cloud SSD for SIFT1B :
+
+![GP3 SIFT1B Performance](figures/GP3_sift1b.png)
+
+##### AWS GP3 Cloud SSD for DEEP1B :
+
+![GP3 DEEP1B Performance](figures/GP3_deep1B.png)
+
+##### AWS IO2 Cloud SSD :
+<img src="figures/cloud_IO2.png" alt="Cloud IO2 Performance" width="300">
+
+##### AWS Cloud HDD :
+<img src="figures/cloud_hdd.png" alt="Cloud HDD Performance" width="300">
+
+##### Local SSD :
+
+![Local SSD Performance](figures/Local_SSD.png)
+
+##### Local HDD :
+
+![Local HDD Performance](figures/Local_HDD.png)
+
+##### Cache Performance on Local SSD for SIFT1B:
+<img src="figures/cache.png" alt="Cache Performance" width="300">
+
+
+

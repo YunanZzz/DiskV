@@ -13,7 +13,7 @@ truthset_fmt=ibin                  # ivecs/ibin
 d=128
 nb=100000000
 nq=10000
-ratio=4                            # sample ratio (100/ratio)% data used to build the index
+ratio=10                            # sample ratio (100/ratio)% data used to build the index
 
 # Partitions and paths
 partitions=1
