@@ -13,6 +13,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <algorithm>
+#include <cctype>
 #include <map>
 #include <set>
 #include <random>
@@ -171,7 +173,7 @@ float* fbin_read(const char* fname, size_t* d_out, size_t* n_out) {
     size_t unuse_result = fread(&n, sizeof(uint32_t), 1, f);
     unuse_result = fread(&d, sizeof(uint32_t), 1, f);
 
-    std::cout << "n: " << n << " d:" << d << "\n";
+    //std::cout << "n: " << n << " d:" << d << "\n";
 
     assert((d > 0 && d < 1000000) || !"unreasonable dimension");
     assert((n > 0 && n < 1000000000) || !"unreasonable number of vectors");
@@ -217,7 +219,7 @@ float* int8bin_read(const char* fname, size_t* d_out, size_t* n_out) {
     size_t unuse_result = fread(&n, sizeof(uint32_t), 1, f);
     unuse_result = fread(&d, sizeof(uint32_t), 1, f);
 
-    std::cout << "n: " << n << " d:" << d << "\n";
+    //std::cout << "n: " << n << " d:" << d << "\n";
 
     assert((d > 0 && d < 1000000) || !"unreasonable dimension");
     assert((n > 0 && n < 1000000000) || !"unreasonable number of vectors");
@@ -263,7 +265,7 @@ float* uint8bin_read(const char* fname, size_t* d_out, size_t* n_out) {
     size_t unuse_result = fread(&n, sizeof(uint32_t), 1, f);
     unuse_result = fread(&d, sizeof(uint32_t), 1, f);
 
-    std::cout << "n: " << n << " d:" << d << "\n";
+    //std::cout << "n: " << n << " d:" << d << "\n";
 
     assert((d > 0 && d < 1000000) || !"unreasonable dimension");
     assert((n > 0 && n < 1000000000) || !"unreasonable number of vectors");
@@ -317,99 +319,47 @@ int* load_groundtruth(const std::string& path, const std::string& fmt, size_t* d
 }
 
 void print_index_info(size_t k, size_t nq, size_t nprobe, bool reset = true){
-    size_t fcc = faiss::indexDiskV_stats.full_cluster_compare;
-    size_t fcr = faiss::indexDiskV_stats.full_cluster_rerank;
-    size_t pcc = faiss::indexDiskV_stats.partial_cluster_compare;
-    size_t pcr = faiss::indexDiskV_stats.partial_cluster_rerank;
-    size_t sl  = faiss::indexDiskV_stats.searched_lists;
+    (void)nprobe;
 
-    double me1 = faiss::indexDiskV_stats.memory_1_elapsed.count() / 1000; 
-    double me2 = faiss::indexDiskV_stats.memory_2_elapsed.count() / 1000; 
-    double me3 = faiss::indexDiskV_stats.memory_3_elapsed.count() / 1000; 
-    double dfe = faiss::indexDiskV_stats.disk_full_elapsed.count() / 1000; 
-    double dpe = faiss::indexDiskV_stats.disk_partial_elapsed.count() / 1000; 
-    double oe = faiss::indexDiskV_stats.others_elapsed.count() / 1000; 
-    double ce = faiss::indexDiskV_stats.coarse_elapsed.count() / 1000; 
-    double re = faiss::indexDiskV_stats.rank_elapsed.count() / 1000; 
-    double rre = faiss::indexDiskV_stats.rerank_elapsed.count() / 1000; 
-    double pe = faiss::indexDiskV_stats.pq_elapsed.count() / 1000; 
-    double cce = faiss::indexDiskV_stats.cached_calculate_elapsed.count()/1000;
-    double de = faiss::indexDiskV_stats.delete_elapsed.count()/1000;
+    const double inv_nq = nq ? 1.0 / static_cast<double>(nq) : 0.0;
 
-    double mue = faiss::indexDiskV_stats.memory_uncache_elapsed.count() / 1000;
-    double rue = faiss::indexDiskV_stats.rank_uncache_elapsed.count() / 1000;
-    double duie = faiss::indexDiskV_stats.disk_uncache_info_elapsed.count() / 1000;
-    double duce = faiss::indexDiskV_stats.disk_uncache_calc_elapsed.count() / 1000;
-    double pue = faiss::indexDiskV_stats.pq_uncache_elapsed.count() / 1000;
-    double csge = faiss::indexDiskV_stats.cache_system_get_elapsed.count() / 1000;
-    double csie = faiss::indexDiskV_stats.cache_system_insert_elapsed.count() / 1000;
-    double fd = faiss::indexDiskV_stats.full_duplicate_elapsed.count() / 1000;
-    double pd = faiss::indexDiskV_stats.partial_duplicate_elapsed.count() / 1000;
-    size_t svf = faiss::indexDiskV_stats.searched_vector_full;
-    size_t svp = faiss::indexDiskV_stats.searched_vector_partial;
-    size_t spf = faiss::indexDiskV_stats.searched_page_full;
-    size_t spp = faiss::indexDiskV_stats.searched_page_partial;
-    size_t rf = faiss::indexDiskV_stats.requests_full;
-    size_t rp = faiss::indexDiskV_stats.requests_partial;
-    size_t lf = faiss::indexDiskV_stats.pq_list_full;
-    size_t lp = faiss::indexDiskV_stats.pq_list_partial;
+    const size_t sl  = faiss::indexDiskV_stats.searched_lists;
+    const size_t svf = faiss::indexDiskV_stats.searched_vector_full;
+    const size_t svp = faiss::indexDiskV_stats.searched_vector_partial;
+    const size_t spf = faiss::indexDiskV_stats.searched_page_full;
+    const size_t spp = faiss::indexDiskV_stats.searched_page_partial;
+    const size_t rf  = faiss::indexDiskV_stats.requests_full;
+    const size_t rp  = faiss::indexDiskV_stats.requests_partial;
+    const size_t cla = faiss::indexDiskV_stats.cached_list_access;
+    const size_t cva = faiss::indexDiskV_stats.cached_vector_access;
 
-    size_t cla = faiss::indexDiskV_stats.cached_list_access;
-    size_t cva = faiss::indexDiskV_stats.cached_vector_access;
-    std::cout << "k" << k << std::endl; 
-    std::cout << "full_cluster_compare      :" << fcc/nq << std::endl;
-    std::cout << "full_cluster_rerank       :" << fcr/nq << std::endl;
-    std::cout << "partial_cluster_compare   :" << pcc/nq << std::endl;
-    std::cout << "partial_cluster_rerank    :" << pcr/nq << std::endl;
+    const double me1 = faiss::indexDiskV_stats.memory_1_elapsed.count() / 1000.0;
+    const double me2 = faiss::indexDiskV_stats.memory_2_elapsed.count() / 1000.0;
+    const double me3 = faiss::indexDiskV_stats.memory_3_elapsed.count() / 1000.0;
+    const double memory_time_cost = (me1 + me2 + me3) * inv_nq;
 
-    std::cout << "AVG rerank ratio(full)    :" << static_cast<double>(fcr) / fcc << std::endl;
-    std::cout << "AVG rerank ratio(partial) :" << static_cast<double>(pcr) / pcc << std::endl;
+    const double dfe = faiss::indexDiskV_stats.disk_full_elapsed.count() / 1000.0;
+    const double dpe = faiss::indexDiskV_stats.disk_partial_elapsed.count() / 1000.0;
+    const double ce  = faiss::indexDiskV_stats.coarse_elapsed.count() / 1000.0;
+    const double re  = faiss::indexDiskV_stats.rank_elapsed.count() / 1000.0;
+    const double pe  = faiss::indexDiskV_stats.pq_elapsed.count() / 1000.0;
 
-    std::cout << "Scanned lists total       :" << sl << std::endl;
-    std::cout << "Scanned lists per query   :" << static_cast<double>(sl) / nq << std::endl;
-    std::cout << "Scanned lists account for :" << static_cast<double>(sl) / (nq * nprobe) << std::endl;
-    std::cout << "TIME evaluate:\n";
-    std::cout << "memory_1_elapsed        :" << me1/nq << std::endl;
-    std::cout << "memory_2_elapsed        :" << me2/nq << std::endl;
-    std::cout << "memory_3_elapsed        :" << me3/nq << std::endl;
-    std::cout << "disk_full_elapsed       :" <<dfe/nq << std::endl;
-    std::cout << "disk_partial_elapsed    :" << dpe/nq << std::endl;
-    std::cout << "others_elapsed    :" << oe/nq << std::endl;
-    std::cout << "coarse_elapsed    :" << ce/nq << std::endl;
-    std::cout << "rank_elapsed    :" << re/nq << std::endl;
-    std::cout << "rerank_elapsed    :" << rre/nq << std::endl;
-    std::cout << "pq_elapsed    :" << pe/nq << std::endl;
-    std::cout << "cache_elapsed    :" << cce/nq << std::endl;
-    std::cout << "delete_elapsed    :" << de/nq << std::endl;
-    std::cout << "\n\n\n";
-    std::cout << "memory_uncache_elapsed   :" << mue/nq << std::endl;
-    std::cout << "rank_uncache_elapsed     :" << rue/nq << std::endl;
-    std::cout << "disk_uncache_info_elapsed     :" << duie/nq << std::endl;
-    std::cout << "disk_uncache_calc_elapsed     :" << duce/nq << std::endl;
-    std::cout << "pq_uncache_elapsed       :" << pue/nq << std::endl;
-    std::cout << "cache_system_get_elapsed      :" << csge/nq << std::endl;
-    std::cout << "cache_system_insert_elapsed   :" << csie/nq << std::endl;
-
-    std::cout << "full_deduplication_elapsed     :" << fd/nq << std::endl;
-    std::cout << "partial_deduplication_elapsed  :" << pd/nq << std::endl;
-
-    std::cout << "searched_vector_full   : " << svf/nq <<std::endl;
-    std::cout << "searched_vector_partial: " << svp/nq <<std::endl;
-    std::cout << "partial/full           : " << svp/(svf+1e6) << std::endl;
-
-    std::cout << "pq_list_full           : " << lf/nq <<std::endl;
-    std::cout << "pq_list_partial       : " << lp/nq <<std::endl;
-
-    std::cout << "searched_page_full   : " << spf/nq <<std::endl;
-    std::cout << "searched_page_partial: " << spp/nq <<std::endl;
-
-    std::cout << "requests_full   : " << rf/nq <<std::endl;
-    std::cout << "requests_partial: " << rp/nq <<std::endl;
-
-    std::cout << "cached lists    : " << cla/nq <<std::endl;
-    std::cout << "cached vectors  : " << cva/nq <<std::endl;
-
-    std::cout << "\n\n\n\n";
+    std::cout << "K=" << k << std::endl;
+    std::cout << "Scanned lists per query :" << static_cast<double>(sl) * inv_nq << std::endl;
+    std::cout << "Memory_time_cost        :" << memory_time_cost << std::endl;
+    std::cout << "disk_full_elapsed       :" << dfe * inv_nq << std::endl;
+    std::cout << "disk_partial_elapsed    :" << dpe * inv_nq << std::endl;
+    std::cout << "coarse_elapsed          :" << ce * inv_nq << std::endl;
+    std::cout << "rank_elapsed            :" << re * inv_nq << std::endl;
+    std::cout << "pq_elapsed              :" << pe * inv_nq << std::endl;
+    std::cout << "searched_vector_full    :" << static_cast<double>(svf) * inv_nq << std::endl;
+    std::cout << "searched_vector_partial :" << static_cast<double>(svp) * inv_nq << std::endl;
+    std::cout << "searched_page_full      :" << static_cast<double>(spf) * inv_nq << std::endl;
+    std::cout << "searched_page_partial   :" << static_cast<double>(spp) * inv_nq << std::endl;
+    std::cout << "requests_full           :" << static_cast<double>(rf) * inv_nq << std::endl;
+    std::cout << "requests_partial        :" << static_cast<double>(rp) * inv_nq << std::endl;
+    std::cout << "cached lists            :" << static_cast<double>(cla) * inv_nq << std::endl;
+    std::cout << "cached vectors          :" << static_cast<double>(cva) * inv_nq << std::endl;
 
     if(reset)
         faiss::indexDiskV_stats.reset();
@@ -449,7 +399,8 @@ void sep_build(float* xb_i, idx_t* xids, size_t nb_i, size_t d, int ratio, size_
     const std::string& disk_store_path,
     const std::string& centroid_index_path,
     int nlist, int m, int nbits, int replicas, float shrink_replicas,
-    float estimate_factor, float prune_factor, std::string metric_type, std::string vector_type, int top_clusters)
+    float estimate_factor, float prune_factor, std::string metric_type, std::string vector_type, int top_clusters,
+    bool verbose, int memory_graph_ef_construction, int memory_graph_ef_search, int memory_graph_M)
 {
     double t0 = elapsed();
     std::vector<float> trainvecs(nb_i / ratio * d);
@@ -483,7 +434,9 @@ void sep_build(float* xb_i, idx_t* xids, size_t nb_i, size_t d, int ratio, size_
     index.set_soaring();
     index.set_shrink_replica(shrink_replicas);
     index.set_multi_index(order, partition_num);
-    index.verbose = false;
+    index.set_memory_graph_build_params(
+        memory_graph_ef_construction, memory_graph_ef_search, memory_graph_M);
+    index.verbose = verbose;
     printf("     [%.3f s] train\n", elapsed() - t0);
     index.train(nb_i / ratio, trainvecs.data());
     printf("     [%.3f s] train finished\n", elapsed() - t0);
@@ -511,7 +464,10 @@ void disk_build(
     const std::string& centroid_index_path,
     int partitions,
     int nlist, int m, int nbits, int replicas, float shrink_replicas,
-    float estimate_factor, float prune_factor, std::string metric_type, std::string dataset_fmt,  std::string vector_type, int build_threads,int top_clusters=3
+    float estimate_factor, float prune_factor, std::string metric_type, std::string dataset_fmt,  std::string vector_type,
+    int build_threads, int top_clusters = 3, bool verbose = false,
+    int memory_graph_ef_construction = 40, int memory_graph_ef_search = 16,
+    int memory_graph_M = 16
 ) {
     double t0 = elapsed();
     size_t dd, nt;
@@ -531,7 +487,8 @@ void disk_build(
         double t1 = elapsed();
         sep_build(xbs[i].data(), xids[i].data(), xbs[i].size()/d, d, ratio, partitions, i,
             index_store_path_i, disk_store_path_i, centroid_index_path_i,
-            nlist, m, nbits, replicas, shrink_replicas, estimate_factor, prune_factor, metric_type, vector_type, top_clusters);
+            nlist, m, nbits, replicas, shrink_replicas, estimate_factor, prune_factor, metric_type, vector_type, top_clusters,
+            verbose, memory_graph_ef_construction, memory_graph_ef_search, memory_graph_M);
         std::cout << "Thread " << omp_get_thread_num() 
                       << " finished processing index " << i 
                       << " in " << (elapsed() - t1) << " seconds." << std::endl;
@@ -554,12 +511,11 @@ void load_indices(faiss::IndexDiskV*& index,
                   int full_decode_volume,
                   int partial_one_decode_volume,
                   int partial_two_decode_volume,
-                  int submit_per_round
+                  int submit_per_round,
+                  bool verbose
 ) {
     std::string index_meta_data_path =  disk_store_path + ".index";
     std::string index_vector_path = disk_store_path + ".clustered";
-    std::cout << "Meta Path now:" << index_meta_data_path << std::endl;
-    std::cout << "Vector Path now:" << index_vector_path << "\n\n\n";
     index = dynamic_cast<faiss::IndexDiskV*>(faiss::read_index(index_meta_data_path.c_str()));
     index->select_lists_path = index_vector_path;
     index->disk_path = index_vector_path;
@@ -574,17 +530,19 @@ void load_indices(faiss::IndexDiskV*& index,
     index->set_max_continous_pages(max_continous_pages);
     index->set_ahead_pq_volumes(full_decode_volume, partial_one_decode_volume, partial_two_decode_volume);
     index->set_submit_per_round(submit_per_round);
-    std::cout << "top:" << top << " replicas:" << replicas 
-              << " estimate_factor:" << estimate_factor 
-              << " estimate_factor_partial:" << estimate_factor_partial 
-              << " estimate_factor_high_dim:" << estimate_factor_high_dim 
-              << " prune_factor:" << prune_factor 
-              << " max_continous_pages:" << max_continous_pages
-              << " full_decode_volume:" << full_decode_volume
-              << " partial_one_decode_volume:" << partial_one_decode_volume
-              << " partial_two_decode_volume:" << partial_two_decode_volume
-              << " submit_per_round:" << submit_per_round
-              << std::endl;
+    if (verbose) {
+        std::cout << "top:" << top << " \nreplicas:" << replicas 
+                  << " \nestimate_factor:" << estimate_factor 
+                  << " \nestimate_factor_partial:" << estimate_factor_partial 
+                  << " \nestimate_factor_high_dim:" << estimate_factor_high_dim 
+                  << " \nprune_factor:" << prune_factor 
+                  << " \nmax_continous_pages:" << max_continous_pages
+                  << " \nfull_decode_volume:" << full_decode_volume
+                  << " \npartial_one_decode_volume:" << partial_one_decode_volume
+                  << " \npartial_two_decode_volume:" << partial_two_decode_volume
+                  << " \nsubmit_per_round:" << submit_per_round
+                  << std::endl;
+    }
 
 }
 
@@ -613,6 +571,7 @@ void disk_search(const char* query_filepath, const char* ground_truth_filepath,
             int search_threads,
             int cache_vectors,
             int query_for_warm_up,
+            bool verbose,
             // ---- NEW: split loading across two disks ----
             int disk1_count,
             const std::string& disk1_store_base,
@@ -640,10 +599,12 @@ void disk_search(const char* query_filepath, const char* ground_truth_filepath,
 
     int k_verify = k;
 
-    std::cout << "dimension:" << dd2 << "\nnumber of queries:" << nt2 
-              << "\nverifing queries:" << nq2 << "\nground truth:" << kk 
-              << "\nverifing neighbor:" << k_verify 
-              << "\nk_per_partition: " << k_per_partition << std::endl;
+    if (verbose) {
+        std::cout << "dimension:" << dd2 << "\nnumber of queries:" << nt2 
+                  << "\nverifing queries:" << nq2 << "\nground truth:" << kk 
+                  << "\nverifing neighbor:" << k_verify 
+                  << "\nk_per_partition: " << k_per_partition << std::endl;
+    }
 
     faiss::idx_t* gt = new faiss::idx_t[k_verify * nq];
     int jj=0;
@@ -690,38 +651,27 @@ void disk_search(const char* query_filepath, const char* ground_truth_filepath,
         load_indices(
             indices[i], disk_store_path_i, centroid_index_path_i,
             ef, partial0, ef_hd,
-            pr, tp, reps, maxp, fdv, pdv, ptv, spr
+            pr, tp, reps, maxp, fdv, pdv, ptv, spr, verbose
         );
     }
     omp_set_num_threads(search_threads);
 
-    //if(cache_vectors != 0){
-        for(int i = 0; i < partitions; i++){
-            printf("[%.3f s] Setting index %d I/O..\n", elapsed() - t0, i);
-            indices[i]->warmUpListCache(1000, xq, 200, 0);
-            //indices[i]->warmUpIndexMetadata(10000, xq, 200,indices[i]->nlist);
-            indices[i]->warmUpAllIndexMetadata();
-            indices[i]->initializeDiskIO(search_threads);
 
-            size_t n_shard = 100000;
-            //indices[i]->set_cache_strategy(faiss::NO_UPDATE);
-            indices[i]->set_cache_strategy(faiss::IMMEDIATELY_UPDATE);  // update when has read a vector
-            //indices[i]->set_cache_strategy(faiss::SINGLE_THREAD_UPDATE, 5);  // update to global every 20 queries each thread
-            //indices[i]->set_cache_strategy(faiss::GLOBAL_CONTROL_UPDATE,100); // all threads update to global when all threads have 480 queries in total
+    for(int i = 0; i < partitions; i++){
+        printf("[%.3f s] Setting index %d I/O..\n", elapsed() - t0, i);
+        indices[i]->warmUpListCache(1000, xq, 200, 0);
+        //indices[i]->warmUpIndexMetadata(10000, xq, 200,indices[i]->nlist);
+        indices[i]->warmUpAllIndexMetadata();
+        indices[i]->initializeDiskIO(search_threads);
 
-            // if(i < 5)
-                 //indices[i]->set_cache_strategy(faiss::SINGLE_THREAD_LOCAL_BUFFER_UPDATE,16,0);  // update when buffer have 16 vectors, and 1 means deduplication in buffer
-            // else
-            //     indices[i]->set_cache_strategy(faiss::IMMEDIATELY_UPDATE); 
-            size_t vector_warmed_up = indices[i]->warmUpVectorCacheShard(query_for_warm_up, xq, 100, 100, cache_vectors, 
-                                                            estimate_factors_partial[0], search_threads ,n_shard);
-            std::cout << "Warming up finished cached: " << vector_warmed_up << " vectors"<<std::endl;
-            indices[i]->shutdownDiskIO(search_threads);
-        }
-        std::cout << "Warm up finished!" << std::endl;
-    // }else{
-    //     std::cout << "Skip caching..." << std::endl;
-    // }
+        size_t n_shard = 100000;
+        indices[i]->set_cache_strategy(faiss::IMMEDIATELY_UPDATE);  // update when has read a vector
+
+        size_t vector_warmed_up = indices[i]->warmUpVectorCacheShard(query_for_warm_up, xq, 100, 100, cache_vectors, 
+                                                        estimate_factors_partial[0], search_threads ,n_shard);
+        std::cout << "Warming up finished cached: " << vector_warmed_up << " vectors"<<std::endl;
+        indices[i]->shutdownDiskIO(search_threads);
+    }
 
     bool multi_filter = true;
     std::vector<double> search_times;
@@ -730,12 +680,14 @@ void disk_search(const char* query_filepath, const char* ground_truth_filepath,
 
     std::cout << "Searching with " << nprobes.size() << " nprobes: ";
     for(int nprobe : nprobes){
-        std::cout << nprobe << " " << std::endl;
+        std::cout << nprobe << " ";
     }
+    std::cout << std::endl;
     std::cout << "Searching with " << estimate_factors_partial.size() << " partial factors: ";
     for(float tem_partial : estimate_factors_partial){
-        std::cout << tem_partial << " " << std::endl;
+        std::cout << tem_partial << " ";
     }
+    std::cout << std::endl;
 
     for(int nprobe_loop : nprobes){  
         for(float partial_loop : estimate_factors_partial){
@@ -752,7 +704,6 @@ void disk_search(const char* query_filepath, const char* ground_truth_filepath,
                 indices[i]->set_estimate_factor_partial(applied_partial);
             }
 
-            printf("[%.3f s]  Searching begin\n", elapsed() - t0);
             double search_time = 0;
             for(int i = 0; i < partitions; i++){
                 indices[i]->initializeDiskIO(search_threads);
@@ -772,9 +723,10 @@ void disk_search(const char* query_filepath, const char* ground_truth_filepath,
                 double t2 = elapsed();
                 search_time += t2 - t1;
                 indices[i]->shutdownDiskIO(search_threads);
-                print_index_info(k_verify, nq, (int)nprobe_loop, false);
+                if (verbose) {
+                    print_index_info(k_verify, nq, (int)nprobe_loop, false);
+                }
             }
-            printf("[%.3f s]  Searching end\n", elapsed() - t0);
 
             for(int i = 0; i < partitions; i++){
                 indices[i]->clear_search_threshold();
@@ -785,7 +737,9 @@ void disk_search(const char* query_filepath, const char* ground_truth_filepath,
             }
 
             int n2_100 = 0;
-            print_index_info(k_verify, nq, (int)nprobe_loop);
+            if (verbose) {
+                print_index_info(k_verify, nq, (int)nprobe_loop);
+            }
 
             for (int i = 0; i < nq; i++) {
                 std::unordered_set<idx_t> real_ids; 
@@ -850,12 +804,9 @@ void disk_search(const char* query_filepath, const char* ground_truth_filepath,
     
 }
 
-
-
-
 int main(int argc, char *argv[]) {
     if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <mode: 0-build, 1-search> <config-file>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <mode: 0-build, 1-search> <config-file> [verbose]" << std::endl;
         return 1;
     }
     int type = atoi(argv[1]);
@@ -915,6 +866,9 @@ int main(int argc, char *argv[]) {
     int search_threads                   = std::stoi(config["search_threads"]);
     int cache_vectors                    = std::stoi(config["cache_vectors"]);
     int query_for_warm_up                = std::stoi(config["query_for_warm_up"]);
+    int verbose_num                      = std::stoi(config["verbose"]);
+
+    bool verbose = (verbose_num != 0);
 
     // -------- helpers ----------
     auto get_s = [&](const std::string& k, const std::string& def)->std::string {
@@ -927,6 +881,10 @@ int main(int argc, char *argv[]) {
         auto it = config.find(k); return (it==config.end()) ? def : std::stof(it->second);
     };
     auto has = [&](const std::string& k)->bool { return config.find(k)!=config.end(); };
+
+    int build_memory_graph_efb = get_i("build_memory_graph_efb", 40);
+    int build_memory_graph_efs = get_i("build_memory_graph_efs", 16);
+    int build_memory_graph_M = get_i("build_memory_graph_M", 16);
 
     // -------- NEW: read multi-disk loading configs with fallback ----------
     int disk1_count = get_i("disk1_count", 0);  // 0 => no split, backward compatible
@@ -969,10 +927,12 @@ int main(int argc, char *argv[]) {
     float partial2_opt = has("search2_estimate_factor_partial") ? std::stof(config["search2_estimate_factor_partial"]) : -1.0f;
 
 
+
     if (type == 0) {
         disk_build(base_filepath.c_str(), nb, d, ratio, 
             build_index_store_path, build_disk_store_path, build_centroid_index_path, partitions,
-            nlist, m, nbits, replicas, shrink_replicas, build_estimate_factor, build_prune_factor, build_metric_type, dataset_fmt, vector_type, build_threads
+            nlist, m, nbits, replicas, shrink_replicas, build_estimate_factor, build_prune_factor, build_metric_type, dataset_fmt, vector_type,
+            build_threads, 3, verbose, build_memory_graph_efb, build_memory_graph_efs, build_memory_graph_M
         );
     } else if (type == 1) {
         disk_search(query_filepath.c_str(), ground_truth_filepath.c_str(), nq, d, k, k_per_partition,
@@ -980,7 +940,7 @@ int main(int argc, char *argv[]) {
             search_estimate_factor, search_estimate_factor_high_dim,
             search_prune_factor, search_top, replicas, search_nprobes, search_estimate_factors_partial, 
             max_continous_pages, full_decode_volume, partial_one_decode_volume, partial_two_decode_volume, 
-            submit_per_round, queryset_fmt, truthset_fmt, search_threads, cache_vectors, query_for_warm_up,
+            submit_per_round, queryset_fmt, truthset_fmt, search_threads, cache_vectors, query_for_warm_up, verbose,
             // split bases
             disk1_count, disk1_store_base, disk1_centroid_base, disk2_store_base, disk2_centroid_base,
             // per-disk param sets for loading

@@ -324,6 +324,8 @@ public:
         this->shrink_factor = shrink_factor;
     }
 
+    void set_memory_graph_build_params(int ef_construction, int ef_search, int graph_M);
+
     void set_multi_index(size_t order, size_t partition_num){
         use_multi_ivf = true;
         this->partition_num = partition_num;
@@ -461,6 +463,9 @@ public:
     Aligned_Invlist_Info* aligned_inv_info;
 
     std::string disk_path;
+    int build_memory_graph_ef_construction = 40;
+    int build_memory_graph_ef_search = 16;
+    int build_memory_graph_M = 16;
     //std::string disk_path_clustered;
     std::ifstream disk_data_read;
     std::ofstream disk_data_write;

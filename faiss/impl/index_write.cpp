@@ -21,7 +21,6 @@
 #include <faiss/Index2Layer.h>
 #include <faiss/IndexAdditiveQuantizer.h>
 #include <faiss/IndexAdditiveQuantizerFastScan.h>
-#include <faiss/IndexDisk.h>
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexHNSW.h>
 #include <faiss/IndexIVF.h>
@@ -451,13 +450,6 @@ void write_index(const Index* idx, IOWriter* f, int io_flags) {
         // eg. for a storage component of HNSW that is set to nullptr
         uint32_t h = fourcc("null");
         WRITE1(h);
-    } else if (const IndexDisk* idxd = dynamic_cast<const IndexDisk*>(idx)) {
-        uint32_t h = fourcc("IxDs");
-        WRITE1(h);
-        write_index_header(idx, f);
-        size_t path_length = idxd->disk_path.size();
-        WRITE1(path_length); 
-        WRITEANDCHECK(idxd->disk_path.c_str(), path_length);
     } else if (const IndexFlat* idxf = dynamic_cast<const IndexFlat*>(idx)) {
         uint32_t h =
                 fourcc(idxf->metric_type == METRIC_INNER_PRODUCT ? "IxFI"

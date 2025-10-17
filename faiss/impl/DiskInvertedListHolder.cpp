@@ -444,7 +444,6 @@ namespace faiss{
         std::vector<std::unique_ptr<uint8_t[]>> vec_data_holder;
         size_t batch_size = 100000;
         size_t vec_acc = 0;
-        std::cout << "warm up 2\n";
 
         for (const auto& item : vectors_indices) {
             uint64_t lp = item.lp_no;

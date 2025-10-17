@@ -23,7 +23,6 @@
 #include <faiss/Index2Layer.h>
 #include <faiss/IndexAdditiveQuantizer.h>
 #include <faiss/IndexAdditiveQuantizerFastScan.h>
-#include <faiss/IndexDisk.h>
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexHNSW.h>
 #include <faiss/IndexIVF.h>
@@ -876,16 +875,6 @@ Index* read_index(IOReader* f, int io_flags) {
                 idxf->codes.size() == idxf->ntotal * idxf->code_size);
         // leak!
         idx = idxf;
-    } else if (h == fourcc("IxDs")) {
-        IndexDisk* idxd = new IndexDisk();
-        // Read disk_path string
-        read_index_header(idxd, f);
-        size_t path_length;
-        READ1(path_length); // Read path length
-        idxd->disk_path.resize(path_length);
-        READANDCHECK((char*)idxd->disk_path.data(), path_length);
-        idx = idxd;
-    
     } else if (h == fourcc("IxHE") || h == fourcc("IxHe")) {
         IndexLSH* idxl = new IndexLSH();
         read_index_header(idxl, f);

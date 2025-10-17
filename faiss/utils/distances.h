@@ -27,9 +27,6 @@ struct IDSelector;
 /// Squared L2 distance between two vectors
 float fvec_L2sqr(const float* x, const float* y, size_t d);
 
-/// Squared L2 distance between two vectors by simd
-float fvec_L2sqr_simd(const float* x, const float* y, size_t d);
-
 /// Squared L2 distance between two vectors in other type
 FAISS_PRAGMA_IMPRECISE_FUNCTION_BEGIN
 template<typename T>

@@ -16,7 +16,6 @@ set(FAISS_SRC
   IndexBinaryHNSW.cpp
   IndexBinaryHash.cpp
   IndexBinaryIVF.cpp
-  IndexDisk.cpp
   IndexFlat.cpp
   IndexFlatCodes.cpp
   IndexHNSW.cpp
@@ -29,7 +28,6 @@ set(FAISS_SRC
   IndexIVFFastScan.cpp
   IndexIVFAdditiveQuantizerFastScan.cpp
   IndexIVFPQFastScan.cpp
-  #IndexIVFPQFastScanDisk.cpp
   IndexIVFPQR.cpp
   IndexIVFRaBitQ.cpp
   IndexIVFSpectralHash.cpp
@@ -118,7 +116,6 @@ set(FAISS_HEADERS
   IndexBinaryHNSW.h
   IndexBinaryHash.h
   IndexBinaryIVF.h
-  IndexDisk.h
   IndexFlat.h
   IndexFlatCodes.h
   IndexHNSW.h
@@ -132,7 +129,6 @@ set(FAISS_HEADERS
   IndexIVFFastScan.h
   IndexIVFAdditiveQuantizerFastScan.h
   IndexIVFPQFastScan.h
-  #IndexIVFPQFastScanDisk.h
   IndexIVFPQR.h
   IndexIVFRaBitQ.h
   IndexIVFSpectralHash.h

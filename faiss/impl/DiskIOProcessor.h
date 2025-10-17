@@ -11,7 +11,6 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <immintrin.h>
 #include <cstddef>
 #include <stack>
 #include <type_traits>
@@ -22,6 +21,9 @@
 #include <cmath> 
 #include <faiss/impl/AsyncIOExtension.h>
 #include <faiss/impl/DiskIOStructure.h>
+#if defined(__AVX2__)
+    #include <immintrin.h>
+#endif
 
 namespace faiss{
 
@@ -424,6 +426,8 @@ namespace{
 // The members of this class is redundent
 // So, there is no need to write it in disk
 // Just make it when needed( read_index and make one)
+
+const int IN_LIST_CLUSTER_RATIO = 40;
 template<typename ValueType>
 struct IVF_DiskIOBuildProcessor : DiskIOProcessor{
 
@@ -633,7 +637,7 @@ struct IVF_DiskIOBuildProcessor : DiskIOProcessor{
                           vectors.data() + j * d);
             }
             if (do_in_list_cluster) {
-                size_t in_list_cluster_num = count / 32;
+                size_t in_list_cluster_num = count / IN_LIST_CLUSTER_RATIO;
                 if (in_list_cluster_num > 1) {
                     Clustering clus(d, in_list_cluster_num);
                     IndexFlat assigner(d, this->metric_type);
@@ -735,7 +739,7 @@ struct IVF_DiskIOBuildProcessor : DiskIOProcessor{
                           all_vectors.data() + j * d);
             }
             if (do_in_list_cluster) {
-                size_t in_list_cluster_num = count / 32;
+                size_t in_list_cluster_num = count / IN_LIST_CLUSTER_RATIO;
                 if (in_list_cluster_num > 1) {
                     Clustering clus(d, in_list_cluster_num);
                     IndexFlat assigner(d, this->metric_type);
@@ -1159,7 +1163,6 @@ struct IVF_DiskIOSearchProcessor_Async_PQ : DiskIOProcessor{
             perror("io_setup failed");
             throw std::runtime_error("Failed to initialize AIO context");
         }
-        std::cout << "AIO context initialized and file opened with O_DIRECT: " << disk_path << std::endl;
     }
 
     ~IVF_DiskIOSearchProcessor_Async_PQ() {
@@ -1171,8 +1174,8 @@ struct IVF_DiskIOSearchProcessor_Async_PQ : DiskIOProcessor{
         }
     }
 
-
-    void convert_to_float(size_t n, float* vectors, void* disk_data) override {
+#if defined(__AVX2__)
+   void convert_to_float(size_t n, float* vectors, void* disk_data) override {
         uint8_t* data = static_cast<uint8_t*>(disk_data);
 
         size_t i = 0;
@@ -1200,6 +1203,18 @@ struct IVF_DiskIOSearchProcessor_Async_PQ : DiskIOProcessor{
             vectors[i] = static_cast<float>(data[i]);
         }
     }
+#else
+    void convert_to_float(size_t n, float* vectors, void* disk_data) override {
+            ValueType* original_vectors = reinterpret_cast<ValueType*>(disk_data);
+            for(size_t i = 0; i < n; i++){
+                for(size_t j = 0; j < d; j++)
+                {
+                    vectors[i*d+j] = static_cast<float>(original_vectors[i*d+j]);
+                }
+            }
+        }
+#endif
+    
 
     float* convert_to_float_single(float* vector, void* disk_data, int begin){
         

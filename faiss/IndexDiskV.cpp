@@ -66,6 +66,9 @@ IndexDiskV::IndexDiskV(
                 estimate_factor(estimate_factor),
                 prune_factor(prune_factor),
                 disk_path(diskPath),
+                build_memory_graph_ef_construction(40),
+                build_memory_graph_ef_search(16),
+                build_memory_graph_M(16),
                 disk_vector_offset(d * sizeof(float)),
                 valueType(valueType) {
     estimate_factor_partial = estimate_factor;
@@ -106,7 +109,9 @@ void IndexDiskV::train_graph(){
     std::cout << "The index is of type Disk.\n";
     IndexFlat* flat_quantizer = dynamic_cast<IndexFlat*>(quantizer);
     if (flat_quantizer != nullptr) {
-        faiss::IndexHNSWFlat index(d, 16, this->metric_type);
+        faiss::IndexHNSWFlat index(d, build_memory_graph_M, this->metric_type);
+        index.hnsw.efConstruction = build_memory_graph_ef_construction;
+        index.hnsw.efSearch = build_memory_graph_ef_search;
         index.add(quantizer->ntotal, flat_quantizer->get_xb());
         faiss::write_index(&index, this->centroid_index_path.c_str());
         std::cout << "Output centroid index.\n";
@@ -125,8 +130,13 @@ void IndexDiskV::load_hnsw_centroid_index(){
     if (centroid_index == nullptr) {
         throw std::runtime_error("Failed to cast the loaded index to faiss::IndexHNSW.");
     }
-    std::cout << "HNSW centroid index loaded successfully from " << centroid_index_path << std::endl;
+}
 
+void IndexDiskV::set_memory_graph_build_params(
+        int ef_construction, int ef_search, int graph_M) {
+    build_memory_graph_ef_construction = ef_construction;
+    build_memory_graph_ef_search = ef_search;
+    build_memory_graph_M = graph_M;
 }
 
 namespace{
@@ -733,7 +743,6 @@ int IndexDiskV::warmUpVectorCache(size_t n, float* x, size_t w_nprobe, size_t k,
     if(nvec != 0)
         this->search(n, x, k, nullptr,nullptr);
 
-    std::cout << "Search end!" << std::endl;
     std::vector<std::vector<VectorPair>> vec_freq= finalizeVectorCollector(n_threads);
 
     this->estimate_factor_partial = fpartia_set;
@@ -742,7 +751,6 @@ int IndexDiskV::warmUpVectorCache(size_t n, float* x, size_t w_nprobe, size_t k,
     vector_cache_setting_mode = false;
 
     std::vector<size_t> sorted_vecs = diskVectorHolder.sort_vectors_to_cache(vec_freq, nvec);
-    std::cout << "Vector cached sorted!" << std::endl;
     
     warm_up(diskVectorHolder, sorted_vecs);
 
@@ -774,7 +782,6 @@ int IndexDiskV::warmUpVectorCacheDp(size_t n, float* x, size_t w_nprobe, size_t 
     if(nvec != 0)
         this->search(n, x, k, nullptr,nullptr);
 
-    std::cout << "Search end!" << std::endl;
     std::vector<std::vector<VectorPair>> vec_freq= finalizeVectorCollector(n_threads);
     
     // restore settings
@@ -785,7 +792,6 @@ int IndexDiskV::warmUpVectorCacheDp(size_t n, float* x, size_t w_nprobe, size_t 
     this->runtime_cache = runtime_cache_set;
 
     std::vector<WarmupVecInfo> sorted_vecs = diskVectorHolder_dp->sort_vectors_to_cache(vec_freq, nvec);
-    std::cout << "Vector Candidates:" << sorted_vecs.size() << std::endl;
     diskVectorHolder_dp->warm_up_2(sorted_vecs);
 
     if(this->runtime_cache){
@@ -803,8 +809,6 @@ int IndexDiskV::warmUpVectorCacheDp(size_t n, float* x, size_t w_nprobe, size_t 
 
 int IndexDiskV::warmUpVectorCacheShard(size_t n, float* x, size_t w_nprobe, size_t k,size_t nvec,float efp, size_t n_threads, size_t n_shard){
     size_t cache_top = 3;
-    std::cout << "cache search threads num:" << n_threads << std::endl;
-    std::cout << "shard cache search shards num:" << n_shard << std::endl;
     initializeVectorCollector(n_threads);
     size_t vector_code_size = get_code_size();
 
@@ -831,7 +835,6 @@ int IndexDiskV::warmUpVectorCacheShard(size_t n, float* x, size_t w_nprobe, size
 
     this->diskVectorHolder_shard = new DiskVectorHolder_shard(n_shard, vector_code_size, capacity, 
                                     this->nlist, this->disk_path, this->aligned_cluster_info);
-    std::cout << "Search end!" << std::endl;
     std::vector<std::vector<VectorPair>> vec_freq= finalizeVectorCollector(n_threads);
 
     // restore settings
@@ -845,7 +848,6 @@ int IndexDiskV::warmUpVectorCacheShard(size_t n, float* x, size_t w_nprobe, size
     this->cache_on_buffer = cache_on_buffer_set;
 
     std::vector<WarmupVecInfo> sorted_vecs = diskVectorHolder_shard->sort_vectors_to_cache(vec_freq, nvec);
-    std::cout << "Vector Candidates:" << sorted_vecs.size() << std::endl;
     diskVectorHolder_shard->warm_up_2(sorted_vecs);
     if(this->runtime_cache)
     {
@@ -856,7 +858,6 @@ int IndexDiskV::warmUpVectorCacheShard(size_t n, float* x, size_t w_nprobe, size
             this->initializeLocalVectorCaches(n_threads, 1000);
         }
     }
-    std::cout << "Warmed up.\n";
     return diskVectorHolder_shard->get_global_size();
 }
 
@@ -2513,7 +2514,7 @@ void IndexDiskV::search_o(
                                 else if(this->valueType == "int8")
                                     distance = vec_L2sqr_h<int8_t>(current_query, ((int8_t*)buffer) +d*m, d);
                                 else
-                                    distance = fvec_L2sqr_simd(current_query, (float*)buffer +d*m, d);
+                                    distance = fvec_L2sqr(current_query, (float*)buffer +d*m, d);
                                 heap_handler->add(cur_q, distance, ids[m]);
                             }
                         }
@@ -2617,7 +2618,7 @@ void IndexDiskV::search_o(
                             else if(this->valueType == "int8")
                                 distance = vec_L2sqr_h<int8_t>(current_query, ((int8_t*)right_buffer) +d*buffer_m, d);    
                             else
-                                distance = fvec_L2sqr_simd(current_query, (float*)right_buffer +d*buffer_m, d);
+                                distance = fvec_L2sqr(current_query, (float*)right_buffer +d*buffer_m, d);
                             heap_handler->add(cur_q, distance, list_ids[m]);
 
                             id_dis_map[list_ids[m]] = distance;
@@ -2993,7 +2994,7 @@ void IndexDiskV::search_o(
                                 else if(this->valueType == "int8")
                                     distance = vec_L2sqr_h<int8_t>(current_query, ((int8_t*)buffer) +d*vec_pos[m], d);
                                 else
-                                    distance = fvec_L2sqr_simd(current_query, (float*)buffer +d*m, d);
+                                    distance = fvec_L2sqr(current_query, (float*)buffer +d*m, d);
                                 heap_handler->add(cur_q, distance, ids[vec_pos[m]]);
                             }
                         }else{
@@ -3101,7 +3102,7 @@ void IndexDiskV::search_o(
 #ifndef BLOCK_BEAM_SEARCH
                     if(this->metric_type == METRIC_L2){
                         for(int m = 0; m < requested->in_buffer_offsets.size(); m++){
-                            distance = fvec_L2sqr_simd(current_query, diskIOprocessor->convert_to_float_single(float_vector.data(),buffer, element_offsets[m]), d);
+                            distance = fvec_L2sqr(current_query, diskIOprocessor->convert_to_float_single(float_vector.data(),buffer, element_offsets[m]), d);
                             heap_handler->add(cur_q, distance, list_ids[element_ids[m]]);
                             id_dis_map[list_ids[element_ids[m]]] = distance;
                         }
@@ -3116,7 +3117,7 @@ void IndexDiskV::search_o(
 #else
                     if(this->metric_type == METRIC_L2){
                         for(int m = 0; m < requested->vectors_num; m++){
-                            distance = fvec_L2sqr_simd(current_query, diskIOprocessor->convert_to_float_single(float_vector.data(),buffer, m*d + requested->iobuffer_offset), d);
+                            distance = fvec_L2sqr(current_query, diskIOprocessor->convert_to_float_single(float_vector.data(),buffer, m*d + requested->iobuffer_offset), d);
                             heap_handler->add(cur_q, distance, list_ids[requested->begin_idx + m]);
                             id_dis_map[list_ids[requested->begin_idx + m]] = distance;
                         }
@@ -3518,7 +3519,7 @@ void IndexDiskV::search_uncached(
 #ifndef BLOCK_BEAM_SEARCH
             for(int m = 0; m < requested->in_buffer_offsets.size(); m++){
                 if(this->metric_type == METRIC_L2)
-                    distance = fvec_L2sqr_simd(current_query, diskIOprocessor->convert_to_float_single(float_vector.data(),buffer, element_offsets[m]), d);
+                    distance = fvec_L2sqr(current_query, diskIOprocessor->convert_to_float_single(float_vector.data(),buffer, element_offsets[m]), d);
                 else
                     distance = fvec_inner_product(current_query, diskIOprocessor->convert_to_float_single(float_vector.data(),buffer, element_offsets[m]), d);
                 heap_handler->add(q, distance, list_ids[element_ids[m]]);
@@ -3526,7 +3527,7 @@ void IndexDiskV::search_uncached(
 #else
             for(int m = 0; m < requested->vectors_num; m++){
                 if(this->metric_type == METRIC_L2)
-                    distance = fvec_L2sqr_simd(current_query, diskIOprocessor->convert_to_float_single(float_vector.data(),buffer, m*d), d);
+                    distance = fvec_L2sqr(current_query, diskIOprocessor->convert_to_float_single(float_vector.data(),buffer, m*d), d);
                 else
                     distance = fvec_inner_product(current_query, diskIOprocessor->convert_to_float_single(float_vector.data(),buffer, m*d), d);
                 heap_handler->add(q, distance, list_ids[requested->begin_idx + m]);
