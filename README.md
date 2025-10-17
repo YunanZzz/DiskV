@@ -169,11 +169,11 @@ The query sets for each segment are the same as the query sets from the whole da
 
 ##### Local SSD :
 
-![Local SSD Performance](figures/Local_SSD.png)
+<img src="figures/Local_SSD.png" alt="Local SSD Performance" width="400">
 
 ##### Local HDD :
 
-![Local HDD Performance](figures/Local_HDD.png)
+<img src="figures/Local_HDD.png" alt="Local HDD Performance" width="400">
 
 ##### Cache Performance on Local SSD for SIFT1B:
 <img src="figures/cache.png" alt="Cache Performance" width="400">
