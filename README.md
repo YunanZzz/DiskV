@@ -134,7 +134,7 @@ We evaluate DiskV on various storage devices.
 We set the test in a vector search scenario by employing an iodepth of 64 with 16 concurrent jobs. The program runs with 4KB and 128KB block-size respectively to measure the random and sequential I/O performance during a realistic 60-second workload on a 1GB data file. 
 Below are the details:
 | Disk Storage | Preset IOPS | Tested IOPS | Preset Bandwidth (MB/s) | Tested Bandwidth (MB/s) |
-|--------------|-------------|-------------|-------------------------|-------------------------|
+|---------------------|-------------|-------------|----------------------|----------------------|
 | GP3_1 (Cloud SSD) | 3,000 | 3,121 | 125 | 125 |
 | GP3_2 (Cloud SSD) | 7,000 | 7,089 | 125 | 125 |
 | GP3_3 (Cloud SSD) | 11,000 | 11,173 | 125 | 125 |
