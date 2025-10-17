@@ -133,16 +133,24 @@ We evaluate DiskV on various storage devices.
 `Fio` is used to test the actual IOPS and throughput for both the local disk storage and cloud disk volumes. 
 We set the test in a vector search scenario by employing an iodepth of 64 with 16 concurrent jobs. The program runs with 4KB and 128KB block-size respectively to measure the random and sequential I/O performance during a realistic 60-second workload on a 1GB data file. 
 Below are the details:
-| Disk Storage | Preset IOPS | Tested IOPS | Preset Bandwidth (MB/s) | Tested Bandwidth (MB/s) |
-|-----------------------------------------|------------|------------|--------------|-------------|
-| GP3_1 (Cloud SSD) | 3,000 | 3,121 | 125 | 125 |
-| GP3_2 (Cloud SSD) | 7,000 | 7,089 | 125 | 125 |
-| GP3_3 (Cloud SSD) | 11,000 | 11,173 | 125 | 125 |
-| GP3_4 (Cloud SSD) | 16,000 | 16,261 | 125 | 125 |
-| IO2 (Cloud SSD) | 18,750 | 18,912 | N/A | 576 |
-| Cloud HDD | N/A | 203 | N/A | 27 |
-| Local SSD | N/A | 76,352 | N/A | 548 |
-| Local HDD | N/A | 339 | N/A | 68 |
+
+<table>
+<tr>
+<th style="min-width: 150px;">Disk Storage</th>
+<th>Preset IOPS</th>
+<th>Tested IOPS</th>
+<th>Preset Bandwidth (MB/s)</th>
+<th>Tested Bandwidth (MB/s)</th>
+</tr>
+<tr><td>GP3_1 (Cloud SSD)</td><td>3,000</td><td>3,121</td><td>125</td><td>125</td></tr>
+<tr><td>GP3_2 (Cloud SSD)</td><td>7,000</td><td>7,089</td><td>125</td><td>125</td></tr>
+<tr><td>GP3_3 (Cloud SSD)</td><td>11,000</td><td>11,173</td><td>125</td><td>125</td></tr>
+<tr><td>GP3_4 (Cloud SSD)</td><td>16,000</td><td>16,261</td><td>125</td><td>125</td></tr>
+<tr><td>IO2 (Cloud SSD)</td><td>18,750</td><td>18,912</td><td>N/A</td><td>576</td></tr>
+<tr><td>Cloud HDD</td><td>N/A</td><td>203</td><td>N/A</td><td>27</td></tr>
+<tr><td>Local SSD</td><td>N/A</td><td>76,352</td><td>N/A</td><td>548</td></tr>
+<tr><td>Local HDD</td><td>N/A</td><td>339</td><td>N/A</td><td>68</td></tr>
+</table>
 
 #### Results
 
