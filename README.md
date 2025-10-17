@@ -151,7 +151,7 @@ Each dataset has been divided into 10 segments. The build time is defined as the
 The query sets for each segment are the same as the query sets from the whole dataset. Query is executed against all segments, and throughput is reported as end-to-end QPS (queries per second).
 
 ##### Build time and index size :
-<img src="figures/combined_graph.png" alt="buildtime_indexsize" width="300">
+<img src="figures/combined_graph.png" alt="buildtime_indexsize" width="400">
 
 ##### AWS GP3 Cloud SSD for SIFT1B :
 
@@ -162,10 +162,10 @@ The query sets for each segment are the same as the query sets from the whole da
 ![GP3 DEEP1B Performance](figures/GP3_deep1B.png)
 
 ##### AWS IO2 Cloud SSD :
-<img src="figures/cloud_IO2.png" alt="Cloud IO2 Performance" width="300">
+<img src="figures/cloud_IO2.png" alt="Cloud IO2 Performance" width="400">
 
 ##### AWS Cloud HDD :
-<img src="figures/cloud_hdd.png" alt="Cloud HDD Performance" width="300">
+<img src="figures/cloud_hdd.png" alt="Cloud HDD Performance" width="400">
 
 ##### Local SSD :
 
@@ -176,7 +176,7 @@ The query sets for each segment are the same as the query sets from the whole da
 ![Local HDD Performance](figures/Local_HDD.png)
 
 ##### Cache Performance on Local SSD for SIFT1B:
-<img src="figures/cache.png" alt="Cache Performance" width="300">
+<img src="figures/cache.png" alt="Cache Performance" width="400">
 
 
 
