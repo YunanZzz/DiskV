@@ -163,11 +163,11 @@ The query sets for each segment are the same as the query sets from the whole da
 
 ##### AWS GP3 Cloud SSD for SIFT1B :
 
-![GP3 SIFT1B Performance](figures/GP3_sift1b.png)
+<img src="figures/GP3_sift1b.png" alt="GP3 SIFT1B Performance" width="700">
 
 ##### AWS GP3 Cloud SSD for DEEP1B :
 
-![GP3 DEEP1B Performance](figures/GP3_deep1B.png)
+<img src="figures/GP3_deep1B.png" alt="GP3 DEEP1B Performance" width="700">
 
 ##### AWS IO2 Cloud SSD :
 <img src="figures/cloud_IO2.png" alt="Cloud IO2 Performance" width="400">
